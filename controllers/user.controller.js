@@ -1,5 +1,6 @@
 const Customer = require("../models/user.model");
 const ejs = require('ejs')
+const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer');
 
 
@@ -16,12 +17,19 @@ const getDashboard = (req, res) => {
 }
 
 const postSignup = (req, res) => {
+    let salt = bcrypt.genSaltSync(10);
+    let hashedPassword = bcrypt.hashSync(req.body.password, salt);
+    
+    // Overwrite the plain password with the hashed one
+    req.body.password = hashedPassword;
+
     const user = req.body;
     
     const newCustomer = new Customer(user);
 
     newCustomer.save()
         .then((user) => {
+            newCustomer.password = hashedPassword;
             console.log("Customer saved:", user);
 
             // Transporter means the informarion about the service you are using to send the email
@@ -86,7 +94,16 @@ const postSignin = (req, res) => {
                 console.log("Invalid email");
                 return res.status(400).json({message: "Invalid email or password"})
             } 
-            if (foundCustomers.password !== password) {
+            // if (foundCustomers.password !== password) {
+            //     console.log("Invalid Password");
+            //     return res.status(400).json({ message: "Invalid email or password"});
+            // }
+
+
+            // Compare provided password with hashed one
+            const isMatch = bcrypt.compareSync(password, foundCustomers.password);
+
+            if(!isMatch) {
                 console.log("Invalid Password");
                 return res.status(400).json({ message: "Invalid email or password"});
             }
@@ -111,3 +128,8 @@ const postSignin = (req, res) => {
 
 
 module.exports = { postSignup, getSignup, postSignin, getSignin, getDashboard }
+
+
+
+
+
