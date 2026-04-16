@@ -76,7 +76,7 @@ const postSignup = (req, res) => {
             }
             });
 
-            res.redirect("/user/signin");
+            // res.redirect("/user/signin");
         })
         .catch((err) => {
             console.error("Error saving to DB:", err);
