@@ -55,7 +55,7 @@ const postSignup = (req, res) => {
                                 <h1 style="color:white; text-align: center;">Welcome to our Application</h1>
                             </div>
                             <div style="padding: 30px 0; text-align: center;">
-                                <p style="font-size: 18px;"><span style="font-weight: 600;">Congratulations!</span> Your sign-up was successful!</p>
+                                <p style="font-size: 18px;"><span style="font-weight: 600;">Congratulations!</span> Your sign-up was successful!</p>a
                                 <p>Thank you for registering. We are excited to have you on board.</p>
                                 <div style="padding: 20px 0;">
                                     <hr style="width: 50%;">
@@ -108,7 +108,7 @@ const postSignin = (req, res) => {
             }
 
 
-            res.redirect("/user/dashboard");
+            // res.redirect("/user/dashboard");
 
             // Success
             return res.json({
@@ -130,11 +130,22 @@ const postSignin = (req, res) => {
         });
 }
 
+const getAllUsers = (req, res) => {
+    Customer.find()
+        .then((allUsers) => {
+            console.log("All users:", allUsers);
+            res.status(200).json(
+                {
+                    message: "Registered Users",
+                    users: allUsers
+                }
+            );
+        })
+        .catch((err) => {
+            console.error("Error fetching users:", err);
+            res.status(500).send("Internal server error");
+        });
+    }
 
-
-module.exports = { postSignup, getSignup, postSignin, getSignin, getDashboard }
-
-
-
-
+module.exports = { postSignup, getSignup, postSignin, getSignin, getDashboard, getAllUsers }
 
