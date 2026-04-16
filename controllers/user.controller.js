@@ -19,7 +19,6 @@ const getDashboard = (req, res) => {
 const postSignup = (req, res) => {
     let salt = bcrypt.genSaltSync(10);
     let hashedPassword = bcrypt.hashSync(req.body.password, salt);
-    
     // Overwrite the plain password with the hashed one
     req.body.password = hashedPassword;
 
@@ -36,18 +35,18 @@ const postSignup = (req, res) => {
             let transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: 'adedayodaniel1711@gmail.com',
+                    user: 'oluwatunmbipaul@gmail.com',
                     // a special password generated from google settings not your original password
                     // Step one: Enable 2-step verification
                     // Step two: Generate app password
-                    pass: 'mawl exta bquu strt'
+                    pass: 'qfbr ktsb mojj ilzq'
                 }
             });
 
             // This is the information about the email you are sending
             let mailOptions = {
-                from: 'adedayodaniel1711@gmail.com',
-                to: [user.email, "victoryajayi90@gmail.com"],
+                from: 'oluwatunmbipaul@gmail.com',
+                to: [user.email, "oluwatunmbipaul@gmail.com"],
                 subject: 'Welcome to our Application',
                 html: 
                 `
@@ -61,7 +60,7 @@ const postSignup = (req, res) => {
                                 <div style="padding: 20px 0;">
                                     <hr style="width: 50%;">
                                     <p style="margin-bottom: 10px;">Best Regards</p>
-                                    <p style="color: #f89b29; margin-top: 0;">Dan Star</p>
+                                    <p style="color: #f89b29; margin-top: 0;">Humble</p>
                                 </div>
                             </div>
                         </div>
@@ -109,12 +108,18 @@ const postSignin = (req, res) => {
             }
 
 
-            // Success
-            console.log("Login Successful for", foundCustomers.email);
-
-
             res.redirect("/user/dashboard");
 
+            // Success
+            return res.json({
+                message: "Login Successful",
+                user: {
+                    id: foundCustomers._id,
+                    email: foundCustomers.email,
+                    firstName: foundCustomers.firstName,
+                    lastName: foundCustomers.lastName
+                }
+            })
 
 
             
