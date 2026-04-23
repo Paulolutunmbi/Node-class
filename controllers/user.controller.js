@@ -1,7 +1,9 @@
 const Customer = require("../models/user.model");
-const ejs = require('ejs')
 const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 
 const getSignup = (req, res) => {
@@ -12,11 +14,19 @@ const getSignin = (req, res) => {
     res.render("signin");
 }
 
-const getDashboard = (req, res) => {
+const getDashboardPage = (req, res) => {
     res.render("dashboard");
 }
 
 const postSignup = (req, res) => {
+    const { password, confirmPassword } = req.body;
+
+    if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    delete req.body.confirmPassword;
+
     let salt = bcrypt.genSaltSync(10);
     let hashedPassword = bcrypt.hashSync(req.body.password, salt);
     // Overwrite the plain password with the hashed one
@@ -35,18 +45,16 @@ const postSignup = (req, res) => {
             let transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: 'oluwatunmbipaul@gmail.com',
-                    // a special password generated from google settings not your original password
-                    // Step one: Enable 2-step verification
-                    // Step two: Generate app password
-                    pass: 'qfbr ktsb mojj ilzq'
+                    user: process.env.MAIL_USER,
+                    // Use app password from environment variables.
+                    pass: process.env.MAIL_PASS
                 }
             });
 
             // This is the information about the email you are sending
             let mailOptions = {
-                from: 'oluwatunmbipaul@gmail.com',
-                to: [user.email, "oluwatunmbipaul@gmail.com"],
+                from: process.env.MAIL_USER,
+                to: [user.email, process.env.MAIL_USER],
                 subject: 'Welcome to our Application',
                 html:
                     `
@@ -94,8 +102,50 @@ const postSignup = (req, res) => {
         });
 }
 
+
+const getDashboard = (req, res) => {
+    if (!JWT_SECRET) {
+        return res.status(500).json({ message: "JWT secret is not configured" });
+    }
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "Authorization token is missing" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ message: "Invalid or expired token" });
+        } else {
+        // Token is valid, proceed with the request
+        console.log("Decoded User:", decoded);
+        let userEmail = decoded.email;
+
+        // Fetch user details from the database using the email
+        Customer.findOne({ email: userEmail })
+            .then((user) => {
+                if (!user) {
+                    return res.status(404).json({ message: "User not found" });
+                }
+                res.status(200).json({ message: "Dashboard accessed successfully", user: user });
+            })
+            .catch((err) => {
+                console.error("Error fetching user:", err);
+                res.status(500).send("Internal server error");
+            });
+        }
+    });
+};
+
 const postSignin = (req, res) => {
     const { email, password } = req.body;
+
+    if (!JWT_SECRET) {
+        return res.status(500).json({ message: "JWT secret is not configured" });
+    }
 
     Customer.findOne({ email })
         .then((foundCustomers) => {
@@ -117,12 +167,14 @@ const postSignin = (req, res) => {
                 return res.status(400).json({ message: "Invalid email or password" });
             }
 
-
             // res.redirect("/user/dashboard");
+            const token = jwt.sign({ email: foundCustomers.email, id: foundCustomers._id }, JWT_SECRET, { expiresIn: '1h' });
+            console.log("Generated Token", token);
 
             // Success
             return res.json({
                 message: "Login Successful",
+                token: token,
                 user: {
                     id: foundCustomers._id,
                     email: foundCustomers.email,
@@ -157,5 +209,5 @@ const getAllUsers = (req, res) => {
         });
 }
 
-module.exports = { postSignup, getSignup, postSignin, getSignin, getDashboard, getAllUsers }
+module.exports = { postSignup, getSignup, postSignin, getSignin, getDashboardPage, getDashboard, getAllUsers }
 
